@@ -42,24 +42,26 @@ export default async function DashboardPage() {
         <div className="fh-panel-head">
           <h3 className="text-[15px]">Best sellers (demo)</h3>
         </div>
-        <table className="fh-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Category</th>
-              {/* <th>Units sold (demo)</th> */}
-            </tr>
-          </thead>
-          <tbody>
-            {bestSellers.map((b) => (
-              <tr key={b.name}>
-                <td>{b.name}</td>
-                <td>—</td>
-                <td>{b.units}</td>
+        <div className="overflow-x-auto">
+          <table className="fh-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Category</th>
+                {/* <th>Units sold (demo)</th> */}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {bestSellers.map((b) => (
+                <tr key={b.name}>
+                  <td>{b.name}</td>
+                  <td>—</td>
+                  <td>{b.units}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

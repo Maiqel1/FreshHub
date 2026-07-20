@@ -1,7 +1,9 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { addCategory } from "@/app/admin/actions";
 import type { MenuCategory } from "@/lib/types";
 import { CategoryPanel } from "./CategoryPanel";
@@ -15,13 +17,23 @@ export function MenuManager({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
 
-  function handleAddCategory() {
-    const name = window.prompt("New category name");
-    if (!name) return;
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
     startTransition(async () => {
-      await addCategory(name);
-      router.refresh();
+      try {
+        await addCategory(trimmed);
+        router.refresh();
+        setName("");
+        setOpen(false);
+        toast.success("Category added");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not add category");
+      }
     });
   }
 
@@ -32,7 +44,7 @@ export function MenuManager({
         <button
           type="button"
           className="fh-btn fh-btn-primary"
-          onClick={handleAddCategory}
+          onClick={() => setOpen(true)}
           disabled={!enabled || pending}
         >
           + Add category
@@ -55,6 +67,47 @@ export function MenuManager({
           isLast={i === categories.length - 1}
         />
       ))}
+
+      <Dialog.Root
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setName("");
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fh-modal-overlay fixed inset-0 z-[60] bg-black/40" />
+          <Dialog.Content
+            className="fh-modal fixed left-1/2 top-1/2 z-[61] w-[min(400px,92vw)] rounded-[10px] border border-[var(--fh-border)] bg-[var(--fh-panel)] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.25)]"
+            aria-describedby={undefined}
+          >
+            <Dialog.Title className="text-[16px] font-extrabold text-[var(--fh-text)]">
+              New category
+            </Dialog.Title>
+            <form onSubmit={handleSubmit}>
+              <input
+                autoFocus
+                className="fh-input mt-4"
+                placeholder="e.g. Wraps"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <div className="mt-6 flex justify-end gap-2">
+                <Dialog.Close type="button" className="fh-btn">
+                  Cancel
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  className="fh-btn fh-btn-primary"
+                  disabled={!name.trim() || pending}
+                >
+                  Add category
+                </button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }

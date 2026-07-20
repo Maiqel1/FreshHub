@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { toast } from "sonner";
 import {
   addItem,
   deleteCategory,
@@ -9,6 +10,7 @@ import {
   renameCategory,
 } from "@/app/admin/actions";
 import type { MenuCategory } from "@/lib/types";
+import { useConfirm } from "./ConfirmProvider";
 import { ItemRow } from "./ItemRow";
 
 export function CategoryPanel({
@@ -23,23 +25,34 @@ export function CategoryPanel({
   isLast: boolean;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
 
-  const run = (fn: () => Promise<void>) =>
+  const run = (fn: () => Promise<void>, success?: string) =>
     startTransition(async () => {
-      await fn();
-      router.refresh();
+      try {
+        await fn();
+        router.refresh();
+        if (success) toast.success(success);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Something went wrong");
+      }
     });
 
   function handleRename(e: React.FocusEvent<HTMLInputElement>) {
     const name = e.target.value.trim();
-    if (name && name !== category.name) run(() => renameCategory(category.id, name));
+    if (name && name !== category.name)
+      run(() => renameCategory(category.id, name), "Category renamed");
   }
 
-  function handleDelete() {
-    if (window.confirm(`Delete "${category.name}" and all its items?`)) {
-      run(() => deleteCategory(category.id));
-    }
+  async function handleDelete() {
+    const ok = await confirm({
+      title: `Delete “${category.name}”?`,
+      description: "This permanently removes the category and every item in it.",
+      confirmLabel: "Delete category",
+      danger: true,
+    });
+    if (ok) run(() => deleteCategory(category.id), "Category deleted");
   }
 
   return (
@@ -78,7 +91,7 @@ export function CategoryPanel({
           <button
             type="button"
             className="fh-btn fh-btn-sm"
-            onClick={() => run(() => addItem(category.id))}
+            onClick={() => run(() => addItem(category.id), "Item added")}
             disabled={!enabled || pending}
           >
             + Item

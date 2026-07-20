@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, Bebas_Neue } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -31,7 +32,10 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${archivo.variable} ${bebas.variable} antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster richColors position="top-center" closeButton />
+      </body>
     </html>
   );
 }

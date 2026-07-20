@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
+import { ConfirmProvider } from "./ConfirmProvider";
 import { SidebarNav } from "./SidebarNav";
 
 export function AdminShell({
@@ -48,8 +49,8 @@ export function AdminShell({
           </div>
         </div>
 
-        <main className="overflow-x-auto px-5 py-6 md:px-10 md:py-8">
-          {children}
+        <main className="px-5 py-6 md:px-10 md:py-8">
+          <ConfirmProvider>{children}</ConfirmProvider>
         </main>
       </div>
     </div>

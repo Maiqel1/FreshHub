@@ -3,8 +3,39 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { toast } from "sonner";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+function EyeIcon({ off }: { off: boolean }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {off ? (
+        <>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68" />
+          <path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3.5 7 10 7a9.12 9.12 0 0 0 5.39-1.61" />
+          <line x1="2" x2="22" y1="2" y2="22" />
+          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+        </>
+      ) : (
+        <>
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -13,6 +44,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -27,8 +59,10 @@ function LoginForm() {
     setLoading(false);
     if (error) {
       setError(error.message);
+      toast.error(error.message);
       return;
     }
+    toast.success("Signed in");
     router.replace(redirectTo);
     router.refresh();
   }
@@ -74,15 +108,26 @@ function LoginForm() {
         <label className="mt-4 block text-[13px] font-semibold" htmlFor="password">
           Password
         </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-black/15 bg-[#f4f1ec] px-3 py-2 text-[14px] outline-none focus-visible:border-[#8a1457]"
-        />
+        <div className="relative mt-1">
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-md border border-black/15 bg-[#f4f1ec] py-2 pl-3 pr-10 text-[14px] outline-none focus-visible:border-[#8a1457]"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-black/45 hover:text-black/75"
+          >
+            <EyeIcon off={showPassword} />
+          </button>
+        </div>
 
         {error && (
           <p className="mt-3 text-[13px] font-medium text-[#b3261e]">{error}</p>

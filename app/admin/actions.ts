@@ -17,6 +17,10 @@ async function assertStaff() {
   if (!user) throw new Error("Not authorized — please sign in.");
 }
 
+function check(error: { message: string } | null) {
+  if (error) throw new Error(error.message);
+}
+
 function refreshMenu() {
   revalidatePath("/");
   revalidatePath("/admin");
@@ -26,7 +30,7 @@ function refreshMenu() {
 export async function addCategory(name: string) {
   await assertStaff();
   const trimmed = name.trim();
-  if (!trimmed) return;
+  if (!trimmed) throw new Error("Category name is required.");
   const supabase = createSupabaseAdminClient();
   const { data: last } = await supabase
     .from("categories")
@@ -34,23 +38,31 @@ export async function addCategory(name: string) {
     .order("sort_order", { ascending: false })
     .limit(1);
   const sort_order = last && last[0] ? last[0].sort_order + 1 : 1;
-  await supabase.from("categories").insert({ name: trimmed, sort_order });
+  const { error } = await supabase
+    .from("categories")
+    .insert({ name: trimmed, sort_order });
+  check(error);
   refreshMenu();
 }
 
 export async function renameCategory(id: string, name: string) {
   await assertStaff();
   const trimmed = name.trim();
-  if (!trimmed) return;
+  if (!trimmed) throw new Error("Category name is required.");
   const supabase = createSupabaseAdminClient();
-  await supabase.from("categories").update({ name: trimmed }).eq("id", id);
+  const { error } = await supabase
+    .from("categories")
+    .update({ name: trimmed })
+    .eq("id", id);
+  check(error);
   refreshMenu();
 }
 
 export async function deleteCategory(id: string) {
   await assertStaff();
   const supabase = createSupabaseAdminClient();
-  await supabase.from("categories").delete().eq("id", id);
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  check(error);
   refreshMenu();
 }
 
@@ -69,14 +81,12 @@ export async function moveCategory(categoryId: string, dir: -1 | 1) {
 
   const a = cats[idx];
   const b = cats[j];
-  await supabase
-    .from("categories")
-    .update({ sort_order: b.sort_order })
-    .eq("id", a.id);
-  await supabase
-    .from("categories")
-    .update({ sort_order: a.sort_order })
-    .eq("id", b.id);
+  check(
+    (await supabase.from("categories").update({ sort_order: b.sort_order }).eq("id", a.id)).error,
+  );
+  check(
+    (await supabase.from("categories").update({ sort_order: a.sort_order }).eq("id", b.id)).error,
+  );
   refreshMenu();
 }
 
@@ -90,22 +100,27 @@ export async function addItem(categoryId: string) {
     .order("sort_order", { ascending: false })
     .limit(1);
   const sort_order = last && last[0] ? last[0].sort_order + 1 : 1;
-  await supabase.from("items").insert({
+  const { error } = await supabase.from("items").insert({
     category_id: categoryId,
     name: "New item",
     price: 0,
     available: true,
     sort_order,
   });
+  check(error);
   refreshMenu();
 }
 
 export async function updateItemName(id: string, name: string) {
   await assertStaff();
   const trimmed = name.trim();
-  if (!trimmed) return;
+  if (!trimmed) throw new Error("Item name is required.");
   const supabase = createSupabaseAdminClient();
-  await supabase.from("items").update({ name: trimmed }).eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ name: trimmed })
+    .eq("id", id);
+  check(error);
   refreshMenu();
 }
 
@@ -113,21 +128,30 @@ export async function updateItemPrice(id: string, price: number) {
   await assertStaff();
   const clean = Number.isFinite(price) && price >= 0 ? Math.round(price) : 0;
   const supabase = createSupabaseAdminClient();
-  await supabase.from("items").update({ price: clean }).eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ price: clean })
+    .eq("id", id);
+  check(error);
   refreshMenu();
 }
 
 export async function setItemAvailability(id: string, available: boolean) {
   await assertStaff();
   const supabase = createSupabaseAdminClient();
-  await supabase.from("items").update({ available }).eq("id", id);
+  const { error } = await supabase
+    .from("items")
+    .update({ available })
+    .eq("id", id);
+  check(error);
   refreshMenu();
 }
 
 export async function deleteItem(id: string) {
   await assertStaff();
   const supabase = createSupabaseAdminClient();
-  await supabase.from("items").delete().eq("id", id);
+  const { error } = await supabase.from("items").delete().eq("id", id);
+  check(error);
   refreshMenu();
 }
 
@@ -147,8 +171,12 @@ export async function moveItem(categoryId: string, itemId: string, dir: -1 | 1) 
 
   const a = items[idx];
   const b = items[j];
-  await supabase.from("items").update({ sort_order: b.sort_order }).eq("id", a.id);
-  await supabase.from("items").update({ sort_order: a.sort_order }).eq("id", b.id);
+  check(
+    (await supabase.from("items").update({ sort_order: b.sort_order }).eq("id", a.id)).error,
+  );
+  check(
+    (await supabase.from("items").update({ sort_order: a.sort_order }).eq("id", b.id)).error,
+  );
   refreshMenu();
 }
 
@@ -217,7 +245,11 @@ export async function removeItemPhoto(itemId: string): Promise<ActionResult> {
     .single();
   const path = existing?.photo_path as string | null | undefined;
 
-  await supabase.from("items").update({ photo_path: null }).eq("id", itemId);
+  const { error } = await supabase
+    .from("items")
+    .update({ photo_path: null })
+    .eq("id", itemId);
+  if (error) return { ok: false, error: error.message };
   if (path) {
     await supabase.storage.from(PHOTO_BUCKET).remove([path]);
   }

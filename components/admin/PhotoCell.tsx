@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { removeItemPhoto, uploadItemPhoto } from "@/app/admin/actions";
 import type { MenuItem } from "@/lib/types";
+import { useConfirm } from "./ConfirmProvider";
 
 export function PhotoCell({
   item,
@@ -13,6 +15,7 @@ export function PhotoCell({
   enabled: boolean;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -25,15 +28,33 @@ export function PhotoCell({
     fd.append("file", file);
     startTransition(async () => {
       const res = await uploadItemPhoto(item.id, fd);
-      if (!res.ok) setError(res.error);
+      if (!res.ok) {
+        setError(res.error);
+        toast.error(res.error);
+      } else {
+        toast.success("Photo updated");
+      }
       router.refresh();
     });
   }
 
-  function handleRemove() {
+  async function handleRemove() {
+    const ok = await confirm({
+      title: "Remove this photo?",
+      description: "The dish will show the placeholder until a new photo is uploaded.",
+      confirmLabel: "Remove photo",
+      danger: true,
+    });
+    if (!ok) return;
     setError(null);
     startTransition(async () => {
-      await removeItemPhoto(item.id);
+      const res = await removeItemPhoto(item.id);
+      if (!res.ok) {
+        setError(res.error);
+        toast.error(res.error);
+      } else {
+        toast.success("Photo removed");
+      }
       router.refresh();
     });
   }

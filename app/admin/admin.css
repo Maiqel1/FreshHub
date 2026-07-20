@@ -1,4 +1,4 @@
-.fh-admin {
+:root {
   --fh-bg: #f4f1ec;
   --fh-panel: #ffffff;
   --fh-text: #221022;
@@ -9,7 +9,9 @@
   --fh-gold: #b8860a;
   --fh-danger: #b3261e;
   --fh-ok: #2b7a4b;
+}
 
+.fh-admin {
   background: var(--fh-bg);
   color: var(--fh-text);
   min-height: 100vh;
@@ -146,6 +148,7 @@
 }
 .fh-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
 }
 .fh-table th {
@@ -292,6 +295,44 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .fh-drawer {
+    animation: none !important;
+  }
+}
+
+.fh-modal {
+  color: var(--fh-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  transform: translate(-50%, -50%);
+}
+.fh-modal-overlay[data-state="open"] {
+  animation: fh-fade-in 0.15s ease forwards;
+}
+.fh-modal[data-state="open"] {
+  animation: fh-modal-in 0.18s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+@keyframes fh-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fh-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fh-modal-overlay,
+  .fh-modal {
     animation: none !important;
   }
 }
