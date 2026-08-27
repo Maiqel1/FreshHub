@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   deleteItem,
@@ -30,8 +30,15 @@ export function ItemRow({
   const router = useRouter();
   const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const run = (fn: () => Promise<void>, success?: string) =>
+  // Cleared on pending, not in a finally: router.refresh() isn't awaited.
+  useEffect(() => {
+    if (!pending) setBusy(null);
+  }, [pending]);
+
+  const run = (fn: () => Promise<void>, success?: string, action?: string) => {
+    setBusy(action ?? null);
     startTransition(async () => {
       try {
         await fn();
@@ -41,6 +48,7 @@ export function ItemRow({
         toast.error(e instanceof Error ? e.message : "Something went wrong");
       }
     });
+  };
 
   async function handleDelete() {
     const ok = await confirm({
@@ -96,18 +104,26 @@ export function ItemRow({
         <button
           type="button"
           className="fh-toggle"
+          data-busy={busy === "availability"}
           onClick={() =>
             run(
               () => setItemAvailability(item.id, !item.available),
               item.available ? "Marked sold out" : "Marked available",
+              "availability",
             )
           }
           disabled={!enabled || pending}
+          aria-busy={busy === "availability"}
           aria-label={`Mark ${item.name} as ${item.available ? "sold out" : "available"}`}
         >
           <span className={item.available ? "fh-avail-on" : "fh-avail-off"}>
-            {item.available ? "Available" : "Sold out"}
+            {busy === "availability"
+              ? "Saving…"
+              : item.available
+                ? "Available"
+                : "Sold out"}
           </span>
+          <span className="fh-spinner" aria-hidden />
         </button>
       </td>
 

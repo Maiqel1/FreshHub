@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function EyeIcon({ off }: { off: boolean }) {
   return (
@@ -48,23 +46,37 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const configured = isSupabaseConfigured();
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-      toast.error(error.message);
-      return;
+
+    try {
+      const response = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.headers.get("content-type")?.includes("application/json")) {
+        throw new Error("Unexpected response from the server. Please try again.");
+      }
+
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Sign-in failed.");
+      }
+
+      toast.success("Signed in");
+      router.replace(redirectTo);
+      router.refresh();
+    } catch (err) {
+      const message = (err as Error).message;
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
-    toast.success("Signed in");
-    router.replace(redirectTo);
-    router.refresh();
   }
 
   return (
@@ -84,13 +96,6 @@ function LoginForm() {
           <span className="text-[18px] font-extrabold">FreshHub Admin</span>
         </div>
         <h1 className="text-[15px] font-semibold text-black/60">Staff sign in</h1>
-
-        {!configured && (
-          <p className="mt-4 rounded-md border border-black/10 bg-[#fff7e6] px-3 py-2 text-[12px] text-black/60">
-            Supabase isn&apos;t configured — set the env vars in <code>.env.local</code>{" "}
-            to enable login.
-          </p>
-        )}
 
         <label className="mt-5 block text-[13px] font-semibold" htmlFor="email">
           Email
@@ -135,7 +140,7 @@ function LoginForm() {
 
         <button
           type="submit"
-          disabled={loading || !configured}
+          disabled={loading}
           className="mt-6 w-full rounded-md bg-[#8a1457] px-4 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#701146] disabled:opacity-60"
         >
           {loading ? "Signing in…" : "Sign in"}

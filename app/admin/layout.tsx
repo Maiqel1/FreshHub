@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isFirebaseConfigured } from "@/lib/firebase/admin";
+import { getSessionUser } from "@/lib/firebase/session";
 import "./admin.css";
 
 export const metadata: Metadata = {
@@ -16,13 +16,10 @@ export default async function AdminLayout({
 }) {
   let userEmail: string | null = null;
 
-  if (isSupabaseConfigured()) {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  if (isFirebaseConfigured()) {
+    const user = await getSessionUser();
     if (!user) redirect("/login");
-    userEmail = user.email ?? null;
+    userEmail = user.email;
   }
 
   return (

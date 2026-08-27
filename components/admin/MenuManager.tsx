@@ -53,8 +53,8 @@ export function MenuManager({
 
       {!enabled && (
         <div className="fh-note mb-5 rounded-md border border-[var(--fh-border)] bg-[#fff7e6] px-3 py-2">
-          Menu editing needs a connected Supabase database (with the service-role key
-          in <code>.env.local</code>). Currently showing read-only data.
+          Menu editing needs a connected Firebase project (with the FIREBASE_*
+          variables in <code>.env.local</code>). Currently showing read-only data.
         </div>
       )}
 

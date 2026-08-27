@@ -1,17 +1,16 @@
 import type { NextConfig } from "next";
 
-const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
-  : undefined;
+const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["firebase-admin"],
   images: {
-    remotePatterns: supabaseHost
+    remotePatterns: storageBucket
       ? [
           {
             protocol: "https",
-            hostname: supabaseHost,
-            pathname: "/storage/v1/object/public/**",
+            hostname: "storage.googleapis.com",
+            pathname: `/${storageBucket}/**`,
           },
         ]
       : [],

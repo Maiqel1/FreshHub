@@ -336,3 +336,63 @@
     animation: none !important;
   }
 }
+
+.fh-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 96px;
+}
+.fh-toggle:disabled {
+  cursor: default;
+}
+.fh-toggle .fh-spinner {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.fh-toggle[data-busy="true"] .fh-spinner {
+  opacity: 1;
+}
+
+.fh-skel {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(34, 16, 34, 0.06) 25%,
+    rgba(34, 16, 34, 0.13) 37%,
+    rgba(34, 16, 34, 0.06) 63%
+  );
+  background-size: 400% 100%;
+  animation: fh-shimmer 1.4s ease infinite;
+}
+@keyframes fh-shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+.fh-skel-title {
+  height: 30px;
+  width: 190px;
+}
+.fh-skel-line {
+  height: 13px;
+  width: 320px;
+  max-width: 100%;
+}
+.fh-skel-stat {
+  height: 76px;
+}
+.fh-skel-panel {
+  height: 340px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fh-skel {
+    animation: none;
+  }
+}

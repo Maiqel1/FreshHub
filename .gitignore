@@ -41,3 +41,29 @@ yarn-error.log*
 next-env.d.ts
 SETUP.md
 design
+
+# the example env is a template, not a secret — keep it committed
+!.env.local.example
+
+# service account credentials — never commit
+*firebase-adminsdk*.json
+*service-account*.json
+serviceAccountKey*.json
+
+# firebase cli
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+pubsub-debug.log*
+ui-debug.log*
+
+# os
+Thumbs.db
+desktop.ini
+
+# claude code local overrides
+.claude/settings.local.json
+
+# point-in-time firestore dumps
+firestore-backup-*.json

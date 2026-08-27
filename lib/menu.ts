@@ -1,11 +1,16 @@
+import {
+  CATEGORIES,
+  ITEMS,
+  getDb,
+  isFirebaseConfigured,
+  photoPublicUrl,
+} from "./firebase/admin";
 import { DEFAULT_CATEGORIES } from "./menu-data";
-import { isSupabaseConfigured, PHOTO_BUCKET } from "./supabase/config";
-import { createSupabaseServerClient } from "./supabase/server";
-import type { MenuCategory } from "./types";
+import type { MenuCategory, MenuItem } from "./types";
 
 export type MenuResult = {
   categories: MenuCategory[];
-  source: "supabase" | "seed";
+  source: "firebase" | "seed";
 };
 
 function seedCategories(): MenuCategory[] {
@@ -22,54 +27,52 @@ function seedCategories(): MenuCategory[] {
   }));
 }
 
-type ItemRow = {
-  id: string;
+type ItemDoc = {
+  category_id: string;
   name: string;
   price: number;
   available: boolean;
   photo_path: string | null;
   sort_order: number;
 };
-type CategoryRow = {
-  id: string;
-  name: string;
-  sort_order: number;
-  items: ItemRow[] | null;
-};
 
 export async function getMenu(): Promise<MenuResult> {
-  if (!isSupabaseConfigured()) {
+  if (!isFirebaseConfigured()) {
     return { categories: seedCategories(), source: "seed" };
   }
 
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("categories")
-      .select("id,name,sort_order,items(id,name,price,available,photo_path,sort_order)")
-      .order("sort_order", { ascending: true })
-      .order("sort_order", { referencedTable: "items", ascending: true });
+    const db = getDb();
+    const [categorySnap, itemSnap] = await Promise.all([
+      db.collection(CATEGORIES).orderBy("sort_order").get(),
+      db.collection(ITEMS).orderBy("sort_order").get(),
+    ]);
 
-    if (error || !data || data.length === 0) {
+    if (categorySnap.empty) {
       return { categories: seedCategories(), source: "seed" };
     }
 
-    const categories: MenuCategory[] = (data as CategoryRow[]).map((c) => ({
-      id: c.id,
-      name: c.name,
-      items: (c.items ?? []).map((it) => ({
-        id: it.id,
-        name: it.name,
-        price: it.price,
-        available: it.available,
-        photoUrl: it.photo_path
-          ? supabase.storage.from(PHOTO_BUCKET).getPublicUrl(it.photo_path).data
-              .publicUrl
-          : null,
-      })),
+    const byCategory = new Map<string, MenuItem[]>();
+    for (const doc of itemSnap.docs) {
+      const data = doc.data() as ItemDoc;
+      const list = byCategory.get(data.category_id) ?? [];
+      list.push({
+        id: doc.id,
+        name: data.name,
+        price: data.price,
+        available: data.available,
+        photoUrl: data.photo_path ? photoPublicUrl(data.photo_path) : null,
+      });
+      byCategory.set(data.category_id, list);
+    }
+
+    const categories: MenuCategory[] = categorySnap.docs.map((doc) => ({
+      id: doc.id,
+      name: doc.data().name as string,
+      items: byCategory.get(doc.id) ?? [],
     }));
 
-    return { categories, source: "supabase" };
+    return { categories, source: "firebase" };
   } catch {
     return { categories: seedCategories(), source: "seed" };
   }
