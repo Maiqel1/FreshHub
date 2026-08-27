@@ -9,10 +9,9 @@ import {
   getDb,
 } from "@/lib/firebase/admin";
 import { requireStaff } from "@/lib/firebase/session";
+import { MAX_PHOTO_BYTES, MAX_PHOTO_LABEL } from "@/lib/limits";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
-
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 function refreshMenu() {
   revalidatePath("/");
@@ -186,7 +185,7 @@ export async function uploadItemPhoto(
     return { ok: false, error: "Please choose an image file." };
   }
   if (file.size > MAX_PHOTO_BYTES) {
-    return { ok: false, error: "Image is too large (max 5 MB)." };
+    return { ok: false, error: `Image is too large (max ${MAX_PHOTO_LABEL}).` };
   }
 
   const db = getDb();
@@ -202,11 +201,15 @@ export async function uploadItemPhoto(
   const bucket = getBucket();
 
   try {
-    await bucket.file(path).save(Buffer.from(await file.arrayBuffer()), {
+    const object = bucket.file(path);
+    await object.save(Buffer.from(await file.arrayBuffer()), {
       contentType: file.type,
       resumable: false,
     });
+    // Without this the object uploads fine but returns 403 to the browser.
+    await object.makePublic();
   } catch (error) {
+    await deletePhotos([path]);
     return { ok: false, error: `Upload failed: ${(error as Error).message}` };
   }
 

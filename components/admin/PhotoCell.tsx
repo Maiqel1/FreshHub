@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { removeItemPhoto, uploadItemPhoto } from "@/app/admin/actions";
+import { MAX_PHOTO_BYTES, MAX_PHOTO_LABEL } from "@/lib/limits";
 import type { MenuItem } from "@/lib/types";
 import { useConfirm } from "./ConfirmProvider";
 
@@ -24,6 +25,15 @@ export function PhotoCell({
     e.target.value = "";
     if (!file) return;
     setError(null);
+
+    // Checked here too: an oversized body is rejected before the action runs.
+    if (file.size > MAX_PHOTO_BYTES) {
+      const message = `Image is too large (max ${MAX_PHOTO_LABEL}).`;
+      setError(message);
+      toast.error(message);
+      return;
+    }
+
     const fd = new FormData();
     fd.append("file", file);
     startTransition(async () => {
